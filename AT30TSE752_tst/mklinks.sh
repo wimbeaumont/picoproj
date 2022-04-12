@@ -1,8 +1,8 @@
-export BASENAME=ADC101_xx
+export BASENAME=AT30TSE75
 
-ln -s $PDEV_PATH/peripheral_dev_tst/"$BASENAME"_tst/"$BASENAME"_tst.cpp .
-ln -s $PDEV_PATH/PeripheralDevices/$BASENAME/$BASENAME.h include/
-ln -s $PDEV_PATH/PeripheralDevices/$BASENAME/$BASENAME.cpp src/
+ln -s $PDEV_PATH/peripheral_dev_tst/"$BASENAME"2_tst/"$BASENAME"2_tst.cpp .
+ln -s $PDEV_PATH/PeripheralDevices/"$BASENAME"x/"$BASENAME"x.h include/
+ln -s $PDEV_PATH/PeripheralDevices/"$BASENAME"x/"$BASENAME"x.cpp src/
 
 ln -s $PDEV_PATH/PeripheralDevices/DevInterfaces/getVersion.cpp src/
 ln -s $PDEV_PATH/PeripheralDevices/DevInterfaces/ADCInterface.h  include/
