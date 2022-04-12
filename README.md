@@ -28,6 +28,23 @@ To generate the projects  I use pico-project-generator
 
 https://github.com/raspberrypi/pico-project-generator
 
+to create a new project 
+
+in dir picoproj
+
+/home/wimb/pico/pico-project-generator/pico_project.py  -f i2c -uart -usb ADC101_xx_tst
+
+cd ADC101_xx_tst 
+
+mkdir src
+
+mkdir inlcude 
+
+echo  "build/*" > .gitignore
+
+Each sub dir or "lib"  dir needs a CMakeList.txt file . 
+
+
 
 
 
