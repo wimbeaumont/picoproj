@@ -40,7 +40,8 @@ target_link_libraries(pwmclasstst pico_stdlib  pwmlib )
 target_link_libraries(pwmclasstst 
 						pico_stdlib
 						hardware_pwm
-						hardware_clocks 
+						hardware_clocks
+						hardware_adc
 						)
 
 pico_add_extra_outputs(pwmclasstst)
