@@ -46,25 +46,24 @@ Each sub dir or "lib"  dir needs a CMakeList.txt file .
 
 
 
+projects : 
+
+*1)  : need the variable PDEV_PATH pointing to the github repositories wimbeaumont/PeripheralDevices  and wimbeaumont/peripheral_dev_tst 
+These projects make sym links to the files inside the repositories using a bash script 
+
+Would be better to use CMAKE for this but not yet figured out how to do this in the pico sdk 
+
+
+   * ADC101_xx_tst	*1)	test program for the ADC  ADC101
+   * AT30TSE752_tst	*1)	test program for the temperature probe 
+   * HTS221_tst	   *1)	test program for reading the humidity HTS221
+   * LVDTchkctrl    *1)	program for controlling a actuator with PWM  and reading temperature for a setup testing LVDT's 
+   * PWM					library to simplify the PWM control 
+   * pwmclasstst			test program for the PWM lib , reading versions and on chip  temperature
+
 
 
 
 Some "ptifalls"  
 
-examples  scan I2C bus,  on a linux machine ( lubuntu 18 ) the serial port was not found.  Fixed it by putting hte printf in a while(1). 
-
-projects 
-*1)  : need the variable PDEV_PATH pointing to the github repositories wimbeaumont/PeripheralDevices  and wimbeaumont/peripheral_dev_tst 
-These projects make sym links to the files inside the repositories using a bash script 
-Would be better to use CMAKE for this but not yet figured out how to do this in the pico sdk 
-
-
-ADC101_xx_tst	*1)	test program for the ADC  ADC101
-AT30TSE752_tst	*1)	test program for the temperature probe 
-HTS221_tst	   *1)	test program for reading the humidity HTS221
-LVDTchkctrl    *1)	program for controlling a actuator with PWM  and reading temperature for a setup testing LVDT's 
-PWM					library to simplify the PWM control 
-pwmclasstst			test program for the PWM lib , reading versions and on chip  temperature
-
-
-
+examples  scan I2C bus,  connected to a linux machine ( lubuntu 18 ) the serial port was not found.  Fixed it by putting hte printf in a while(1). 
