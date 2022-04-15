@@ -40,6 +40,7 @@ target_link_libraries(LVDTchkctrl pico_stdlib PerDev pwmlib )
 target_link_libraries(LVDTchkctrl
         hardware_i2c
         hardware_pwm
+        hardware_adc
         pico_multicore
         )
 
