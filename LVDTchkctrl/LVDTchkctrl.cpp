@@ -12,13 +12,15 @@
  * V 0.40 : compile check with the correct pin + IO to switch on/ off the power for the actuator 
  * V 0.41 : checked with pico standalone 
  * V 0.43 : checking with full hw 
+ * V 0.45 : version  used  . return also 0.0. after p, to be investigated 
+ * V 0.46 : put sleep in the core 1 in the for loop 
  * C) Wim Beaumont Universiteit Antwerpen  2022
  *
  * License see
  * https://github.com/wimbeaumont/PeripheralDevices/blob/master/LICENSE
  */ 
 
-#define LVDTCHKCTRLVER "0.45"
+#define LVDTCHKCTRLVER "0.46"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -38,16 +40,22 @@ PicoI2CInterface*  i2cdev = &Pi2c;
 const uint ActPP=15;  // Actuator power pin 
 const uint PWMPIN=13;  // actuator (PWM) control pin 
 
+
 void core1_entry() {
 	PWM_PICO pwmled( PICO_DEFAULT_LED_PIN);  //GPIO 25 
 	pwmled.freq(10000,true);
+	float delta_l=.05 ;
+	float dc_set;
 	while(1) {
-		for (float dc =0; dc<100; dc+=.5) {
-			pwmled.duty(dc);
+		for (float dc =0; dc<100; dc+=delta_l) {
+			if( delta_l < 2.5)delta_l=1.05*delta_l; // increase the delta each time
+			dc_set=pwmled.duty(dc);
+			sleep_ms(200);
 		}
-		sleep_ms(100);
+		
 	}
 }
+
 
 
 

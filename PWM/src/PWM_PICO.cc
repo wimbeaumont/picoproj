@@ -1,5 +1,6 @@
 #include "PWM_PICO.h" 
 
+#define PWM_PICO_VER "1.1"
 
 	PWM_PICO::PWM_PICO( uint gpiopin) {
 		gpio_set_function(gpiopin, GPIO_FUNC_PWM);
@@ -47,9 +48,10 @@
 	}
 	
 	float PWM_PICO::duty( float duty ) {
-		if( duty > 100.0) duty=100;
-		if( duty < 0.0) duty=0.0;
-		uint32_t setduty32 = ( uint32_t) ( duty * config.top /100 );
+		uint32_t setduty32=0;
+		if( duty > 100.0) setduty32=( uint32_t)config.top;
+		else if( duty < 0.0) setduty32=( uint32_t)0;
+		else setduty32 = ( uint32_t) ( duty * config.top /100 );
 		set_duty_u32(setduty32);
 		return  100*(float) setduty32 / (float)config.top;
 	}

@@ -39,6 +39,7 @@ target_link_libraries(pwmclasstst pico_stdlib  pwmlib )
 # Add the standard library to the build
 target_link_libraries(pwmclasstst 
 						pico_stdlib
+						pico_multicore
 						hardware_pwm
 						hardware_clocks
 						hardware_adc
