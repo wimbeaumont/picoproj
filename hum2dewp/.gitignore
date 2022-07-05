@@ -1,0 +1,14 @@
+
+
+build/*
+
+
+
+# include and src contain mainly sym link 
+src/*
+include/*
+
+# list here the files in incl and src that should be kept
+!src/CMakeLists.txt
+
+

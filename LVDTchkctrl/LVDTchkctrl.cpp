@@ -14,13 +14,14 @@
  * V 0.43 : checking with full hw 
  * V 0.45 : version  used  . return also 0.0. after p, to be investigated 
  * V 0.46 : put sleep in the core 1 in the for loop 
+ * V 0.50 : put temperature sensor in high resolution
  * C) Wim Beaumont Universiteit Antwerpen  2022
  *
  * License see
  * https://github.com/wimbeaumont/PeripheralDevices/blob/master/LICENSE
  */ 
 
-#define LVDTCHKCTRLVER "0.46"
+#define LVDTCHKCTRLVER "0.51"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -82,9 +83,10 @@ int main(){
     adc_select_input(2); //GPIO 28 
     
     // the temperature init 
-	AT30TSE75x tid( i2cdev ,3);
-	bool Tvalid = !tid.getInitStatus() ;
 	int i2cerr=-1;
+	AT30TSE75x tid( i2cdev ,3);
+	tid.set_resolution(12 , i2cerr,false,true ); // none volitaile but update 
+	bool Tvalid = !tid.getInitStatus() ;
 	float temperature=-274;  // invalid tempeature 
 	// the PWM actuator control init 
 	PWM_PICO pwm( PWMPIN);  // set PWM to gpio 13  
