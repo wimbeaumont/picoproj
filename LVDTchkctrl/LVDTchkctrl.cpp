@@ -15,13 +15,14 @@
  * V 0.45 : version  used  . return also 0.0. after p, to be investigated 
  * V 0.46 : put sleep in the core 1 in the for loop 
  * V 0.50 : put temperature sensor in high resolution
+ * V 0.52 : adapted the new PWM API
  * C) Wim Beaumont Universiteit Antwerpen  2022
  *
  * License see
  * https://github.com/wimbeaumont/PeripheralDevices/blob/master/LICENSE
  */ 
 
-#define LVDTCHKCTRLVER "0.51"
+#define LVDTCHKCTRLVER "0.52"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -43,14 +44,13 @@ const uint PWMPIN=13;  // actuator (PWM) control pin
 
 
 void core1_entry() {
-	PWM_PICO pwmled( PICO_DEFAULT_LED_PIN);  //GPIO 25 
-	pwmled.freq(10000,true);
+	PWM_PICO pwmled( PICO_DEFAULT_LED_PIN,10000);  //GPIO 25 
 	float delta_l=.05 ;
 	float dc_set;
 	while(1) {
 		for (float dc =0; dc<100; dc+=delta_l) {
 			if( delta_l < 2.5)delta_l=1.05*delta_l; // increase the delta each time
-			dc_set=pwmled.duty(dc);
+			dc_set=pwmled.set_dutycycle(dc);
 			sleep_ms(200);
 		}
 		
@@ -89,8 +89,7 @@ int main(){
 	bool Tvalid = !tid.getInitStatus() ;
 	float temperature=-274;  // invalid tempeature 
 	// the PWM actuator control init 
-	PWM_PICO pwm( PWMPIN);  // set PWM to gpio 13  
-	pwm.freq(1000,true);
+	PWM_PICO pwm( PWMPIN,1000);  // set PWM to gpio 13  
 	puts("Hello, world!");
 	
 	// the actuator power control pin init 
@@ -106,7 +105,7 @@ int main(){
 				scanf("%f",&posreq);
 				printf("%f\n",posreq);
 				if(posreq > 50.0 ) posreq=50.0;if (posreq < 0.01)  posreq =0.01;
-				pwm.duty(100* posreq/50.0); //dutycycle is in % 
+				pwm.set_dutycycle(100* posreq/50.0); //dutycycle is in % 
 				poweract(true);
 				sleep_ms(4000);
 				curpos=adc2pos(adc_read());

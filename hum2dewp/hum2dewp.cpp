@@ -6,7 +6,7 @@
 #include "PWM_PICO.h" 
 #include "math.h"
 
-#define HUM2DEWPVER "0.61" 
+#define HUM2DEWPVER "0.62" 
 
 const float Vref=3.3; // voltage reference NTC circuit
 const float VrefADC=3.0; // voltage reference pico ADC 
@@ -86,25 +86,41 @@ float adc2Vsys( void ){
 	return 2*read_adc_ch(VSYSIN);
 }
 
+// dew point calc 
+
+// https://en.wikipedia.org/wiki/Dew_point#Calculating_the_dew_point
+// rh relative humitdity in % ( so 70  = 70% ) 
+// Tact actual temperature in [C]
+// return dewpoint in [C] 
+float dewpoint ( float rh , float Tact){
+	const float a=6.1121;
+	const float b=18.676;
+	const float c=257.14;
+	const float d=234.5;
+	//expT= exp((b-T/d)*(T/c+T))
+	float expT=exp((b-Tact/d)*(Tact/(c+Tact))); 
+	//Ym(T,RH)= ln( RH/100 * expT) eventual  ln(R/100) + (b-T/d)*(T/c+T)
+	float Ym= log((rh/100)*expT);
+	return c*Ym/(b-Ym);
+
+}
+
 
 
 void core1_entry() {
 	PWM_PICO pwmled( PICO_DEFAULT_LED_PIN);  //GPIO 25 
-	pwmled.freq(10000,true);
+	pwmled.set_frequency(10000,true);
 	float delta_l=.05 ;
 	float dc_set;
 	while(1) {
 		for (float dc =0; dc<100; dc+=delta_l) {
 			if( delta_l < 2.5)delta_l=1.05*delta_l; // increase the delta each time
-			dc_set=pwmled.duty(dc);
+			dc_set=pwmled.set_dutycycle(dc);
 			sleep_ms(200);
 		}
 		
 	}
 }
-
-
-
 
 
 int main(){	
@@ -113,12 +129,14 @@ int main(){
     // Enable the watchdog, requiring the watchdog to be updated every 5100ms or the chip will reboot
     // second arg is pause on debug which means the watchdog will pause when stepping through code
     watchdog_enable(5100, 1);
-    
+     PWM_PICO  outT(11,10000); // have to check for  optimal frequency 
+     PWM_PICO  outDP(14,10000);
 	// The ADC init part 
 	float Hum; // humidity 
 	float Tp; //temperature 
 	float Vsys;// 5V power , ref for temperature 
     adc_init();
+    
     //gpio_disable_pulls (26);  //Vsys 
     //gpio_disable_pulls (27);  // V
     //gpio_disable_pulls (28);
@@ -137,6 +155,8 @@ int main(){
     } 
     printf("hum2dwp ver %s\n\r",HUM2DEWPVER);
     float VTout, Rntc_now;
+    outT.init_PWMVout(-80,50,0,3.3);
+    outDP.init_PWMVout(-40,50,0,3.3);
     while(1) {
 			watchdog_update();
 			Vsys=adc2Vsys( );
@@ -144,7 +164,11 @@ int main(){
 			Hum=adc2Hum(-300);
 			printf("hum= %f ",Hum) ;
 			Tp= adc2Tp(VTout, Rntc_now);
+			float dp=dewpoint(Hum,Tp);
+			printf( "dp= %f ",dp);
 			printf("Tp= %f,R= %f  \n\r",Tp,Rntc_now );
+			outT.set_PWMVout(Tp);
+			outDP.set_PWMVout(dp);
 	}
 
     return 0;

@@ -2,11 +2,14 @@
 
 #define PWM_PICO_VER "1.1"
 
-	PWM_PICO::PWM_PICO( uint gpiopin) {
+	PWM_PICO::PWM_PICO( uint gpiopin, float freq):vgain(1.0),voffset(0.0) ,VrefPMC(3.3) {
 		gpio_set_function(gpiopin, GPIO_FUNC_PWM);
 		config = pwm_get_default_config();
 		channr=pwm_gpio_to_channel(gpiopin);
 		slicenr=pwm_gpio_to_slice_num(gpiopin);
+		if ( freq > 0) {
+			set_frequency(freq,true);
+		}
 		
 	}
 	// set the periode time in us  of the PWM 
@@ -47,7 +50,7 @@
 		return (uint16_t) setduty32 ;
 	}
 	
-	float PWM_PICO::duty( float duty ) {
+	float PWM_PICO::set_dutycycle( float duty ) {
 		uint32_t setduty32=0;
 		if( duty > 100.0) setduty32=( uint32_t)config.top;
 		else if( duty < 0.0) setduty32=( uint32_t)0;
@@ -62,4 +65,16 @@
 	
 	}
 
+void  PWM_PICO::init_PWMVout(  float Valuemin,  float Valuemax,float Voutmin,float Voutmax , float Vrefset ){
+	if ( Valuemin == Valuemax) return ;
+	float vgain = (Voutmax-Voutmin)/(Valuemax-Valuemin); 
+	float voffset= Voutmin*vgain-Valuemin;
+	float VrefPMC=Vrefset;
+}
+
+void PWM_PICO::set_PWMVout(float valuein)  {
+	
+	float duty_c=(vgain*valuein+voffset) /VrefPMC;  // vout / 3.3 output voltage  pico 
+	set_dutycycle ( vgain*valuein+voffset); 
+} 
 
