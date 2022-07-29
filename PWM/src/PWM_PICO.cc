@@ -1,8 +1,8 @@
 #include "PWM_PICO.h" 
 
-#define PWM_PICO_VER "1.1"
 
 	PWM_PICO::PWM_PICO( uint gpiopin, float freq):vgain(1.0),voffset(0.0) ,VrefPMC(3.3) {
+		gpio_set_pulls (gpiopin,true,false);
 		gpio_set_function(gpiopin, GPIO_FUNC_PWM);
 		config = pwm_get_default_config();
 		channr=pwm_gpio_to_channel(gpiopin);
@@ -49,15 +49,16 @@
 		set_duty_u32(setduty32);
 		return (uint16_t) setduty32 ;
 	}
-	
-	float PWM_PICO::set_dutycycle( float duty ) {
+
+	float PWM_PICO::set_dutycycle_dec( float duty ) {
 		uint32_t setduty32=0;
-		if( duty > 100.0) setduty32=( uint32_t)config.top;
+		if( duty > 1.0) setduty32=( uint32_t)config.top;
 		else if( duty < 0.0) setduty32=( uint32_t)0;
-		else setduty32 = ( uint32_t) ( duty * config.top /100 );
+		else setduty32 = ( uint32_t) ( duty * config.top  );
 		set_duty_u32(setduty32);
-		return  100*(float) setduty32 / (float)config.top;
+		return  (float) setduty32 / (float)config.top;
 	}
+
 
 	
 	void PWM_PICO::set_enabled(bool enable ) {
@@ -67,14 +68,14 @@
 
 void  PWM_PICO::init_PWMVout(  float Valuemin,  float Valuemax,float Voutmin,float Voutmax , float Vrefset ){
 	if ( Valuemin == Valuemax) return ;
-	float vgain = (Voutmax-Voutmin)/(Valuemax-Valuemin); 
-	float voffset= Voutmin*vgain-Valuemin;
-	float VrefPMC=Vrefset;
+	vgain = (Voutmax-Voutmin)/(Valuemax-Valuemin); 
+	voffset= Voutmin-Valuemin*vgain;
+	VrefPMC=Vrefset;
 }
 
-void PWM_PICO::set_PWMVout(float valuein)  {
+float  PWM_PICO::set_PWMVout(float valuein)  {
 	
 	float duty_c=(vgain*valuein+voffset) /VrefPMC;  // vout / 3.3 output voltage  pico 
-	set_dutycycle ( vgain*valuein+voffset); 
+	return set_dutycycle_dec(duty_c ); 
 } 
 

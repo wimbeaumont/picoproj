@@ -4,10 +4,12 @@
 
 // v1.0  used 
 // v1.1  added freq in initiation and changed freq to set_frequncy
-//        duty to set_dutycycle 
+//       duty to set_dutycycle 
 // v1.2  added vout functionality 
+// v1.21 corrected  vout functionality 
+// v1.3  added set_dutycycle_dec
 
-#define PWM_PICO_VER "1.1"
+#define PWM_PICO_VER "1.32"
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
 #include "hardware/clocks.h"
@@ -28,7 +30,8 @@ class PWM_PICO{
 
 public: 	
 	// initialize the PWM for gpiopin 
-	// if frequency > 0 the frequency will set and the PWM will be enabled. 
+	// if frequency > 0 the frequency will set and the PWM will be enabled.
+	// pull up is set  
 	PWM_PICO( uint gpiopin , float freq=0 );
 	
 	// set the periode time in us  of the PWM 
@@ -53,8 +56,13 @@ public:
 	// 
 	uint16_t duty_u16(uint16_t setduty );
 	
-	// set the duty cycle in %  if duty > 100% the duty cycle will be set to max duty cycle  (calls duty_u32 )
-	float set_dutycycle( float duty );
+	// set the duty cycle in decimal ( 0.0 to 1.0 if duty > 1 the duty cycle will be set to max duty cycle  
+	// if < 0  will be set to 0 
+	//calls duty_u32 )
+	float set_dutycycle_dec( float duty );
+	
+	// set the duty cycle in %  ( == 
+	float set_dutycycle( float duty ) { return 100*set_dutycycle_dec( duty/100) ;};
 	
 	void set_enabled(bool enable );
 
@@ -64,7 +72,7 @@ public:
 
 	//set the duty cycle so that the average output voltatge will be related to valuein based on the init_vout settings
 	// if init_vout is not set , then vout = valuein 
-	void set_PWMVout ( float valuein); 
+	float set_PWMVout ( float valuein); 
 }; //end class PWM_PICO 
 
 
