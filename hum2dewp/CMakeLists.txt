@@ -29,7 +29,7 @@ target_include_directories(hum2dewp PUBLIC ../PWM/include/)
 
 
 pico_set_program_name(hum2dewp "hum2dewp")
-pico_set_program_version(hum2dewp "0.1")
+pico_set_program_version(hum2dewp "0.7")
 
 pico_enable_stdio_uart(hum2dewp 1)
 pico_enable_stdio_usb(hum2dewp 1)

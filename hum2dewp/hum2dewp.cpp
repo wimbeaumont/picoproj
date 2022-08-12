@@ -12,6 +12,7 @@
  *        checked voltages seems to be ok. 
  * V 0.7  activated the temperature dependency for the humidity readout 
  *        corrected bug in the dP to voltage output function ( PWM class) 
+ * V 0.8  average humidiy 
  * 
  */
 
@@ -25,11 +26,12 @@
 #include "PWM_PICO.h" 
 #include "math.h"
 
-#define HUM2DEWPVER "0.71" 
+#define HUM2DEWPVER "0.82" 
 
 const float Vref=3.3; // voltage reference NTC circuit
 const float VrefADC=3.0; // voltage reference pico ADC 
 const int HISSIZE=10;
+const int HISSIZEH=10;
 const float gNTC=0.7464265433589305 ; // gain for the R NTC calculation based on cal resistors
 const float oNTC=0.22897459613882545; // offset for the R NTC calculation based on cal resistors
 const float RsNTC= 68000;  // serie resistor NTC 
@@ -37,6 +39,21 @@ const float NTCa_bi=8.55E-04;
 const float NTCb_bi=2.57E-04;
 const float NTCc_bi=1.65E-07;
 enum ADCINP {HUNMIN=0, TEMPIN=1 , VSYSIN=2 };
+
+
+
+// routing to take the average of a ring counter , avoiding sum over all entries of the histogram 
+float  avg(float newvalue, float* hist,int& ringcnt, int HSIZE , float& sum ) {
+	int oldcnt=ringcnt+1;
+	if (oldcnt >=  HSIZE) oldcnt=0;
+	sum=sum-hist[oldcnt];
+	ringcnt++;
+	if ( ringcnt >= HSIZE )  ringcnt=0;
+	hist[ringcnt]=newvalue;
+	sum=sum+newvalue;
+	return sum/HSIZE;
+}
+	
 // returns the voltage on the adcch 
 float read_adc_ch( int adcch) {
 	
@@ -47,9 +64,18 @@ float read_adc_ch( int adcch) {
 // returns the humidiy in % , if T > -273 C  temperature compensation is applied 
 // T ambient temperature in C  
 float adc2Hum(float T ){
-	
+	static float hisH[HISSIZEH];
+	static int ringcH=0;
 	float vread=1000* read_adc_ch(HUNMIN); // [mV]
-	float hum= 0.0375*vread-37.7;
+	// take the average of the last 10 readings 
+	hisH[ringcH++]=vread;
+	if( ringcH >=  HISSIZEH)ringcH=0;
+	float avgs=0;
+	for (int cnt=0;cnt<HISSIZEH;cnt++) {
+		avgs+=hisH[cnt];
+	}
+	avgs=avgs/HISSIZEH;
+	float hum= 0.0375*avgs-37.7;
 	if( T > -273) {
 		hum = hum *( 1- 0.0024*(T-23));
 	}
@@ -154,6 +180,7 @@ int main(){
 	float Hum; // humidity 
 	float Tp; //temperature 
 	float Vsys;// 5V power , ref for temperature 
+	float dp; //dewpoint 
     adc_init();
     
     //gpio_disable_pulls (26);  //Vsys 
@@ -176,19 +203,23 @@ int main(){
     float VTout, Rntc_now;
     outT.init_PWMVout(-40,50,0,3.3);
     outDP.init_PWMVout(-60,20,0,3.3);
+    uint lc=0;
     while(1) {
 			watchdog_update();
 			Vsys=adc2Vsys( );
-			printf("Vsys= %f ", Vsys );
 			Tp= adc2Tp(VTout, Rntc_now);
 			Hum=adc2Hum(Tp);
-			float dp=dewpoint(Hum,Tp);
-			printf("hum= %f ",Hum) ;
-			printf("dp= %f ",dp);
-			printf("Tp= %f ",Tp );
-			printf("dT=%f", outT.set_PWMVout(Tp));
-			printf("dDP=%f", outDP.set_PWMVout(dp));
-			printf("\n\r");
+			dp=dewpoint(Hum,Tp);
+			lc++;
+			if( lc%100 == 0){
+				printf("Vsys= %f ", Vsys );
+				printf("H= %f ",Hum) ;
+				printf("dp= %f ",dp);
+				printf("T= %f ",Tp );
+				printf("dT=%f ", outT.set_PWMVout(Tp));
+				printf("dDP=%f", outDP.set_PWMVout(dp));
+				printf("\n\r");
+			}
 	}
 
     return 0;
