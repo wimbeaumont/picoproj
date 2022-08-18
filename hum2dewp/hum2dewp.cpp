@@ -13,7 +13,11 @@
  * V 0.7  activated the temperature dependency for the humidity readout 
  *        corrected bug in the dP to voltage output function ( PWM class) 
  * V 0.8  average humidiy 
- * 
+ * V 0.9  introduce ADC read class to unify histograming ( avaraging) added float optimalization for pico 
+ * 		   not tested   class is tested. 
+ * V 0.91  use "float.h" #include "pico/types.h" #include "pico/bootrom/sf_table.h" not tested 
+ * V 0.92  not tested with hardware.   Preps for ADC read class, the functions ADC2xx for ADC input 
+ * V 0.92 
  */
 
 
@@ -25,8 +29,11 @@
 #include "hardware/watchdog.h"
 #include "PWM_PICO.h" 
 #include "math.h"
+#include "float.h" 
+#include "pico/types.h"
+#include "pico/bootrom/sf_table.h"
 
-#define HUM2DEWPVER "0.82" 
+#define HUM2DEWPVER "0.92" 
 
 const float Vref=3.3; // voltage reference NTC circuit
 const float VrefADC=3.0; // voltage reference pico ADC 
@@ -61,12 +68,56 @@ float read_adc_ch( int adcch) {
 	sleep_ms(50);
 	return (float)adc_read() * VrefADC/(1<<12);
 }
+
+
+class read_adc_CH {
+	int ch;
+	float* hist;
+	float sumh;
+	float hs; // histogram size 
+	int ringcnt;
+	float avg;
+	float (*radc)(int);
+	public :
+		//constructor,  if histsize a histogram (array)  of histsize is created
+		read_adc_CH(int adcch ,float (*readadcf)(int), int histsize=0) {
+			radc=readadcf;
+			ch=adcch;
+			float Nadc=read_adc_ch(ch);
+			hs=histsize; hist=NULL; ringcnt=0;sumh=0.0;
+			if (hs > 0 && hs < 100 ) hist=new float[(uint32_t)hs];
+		}//end constructor 
+		~read_adc_CH() {  if (hist) delete hist; } 
+		// reads the ADC ch and returns the value 
+		float get_cur_adc_V() {
+			return read_adc_ch(ch);
+		}
+		//reads the ADC ch  and adds this value to the sum of the histogram removes the oldest value 
+		//returns the average of the histogram.  
+		float get_adcV() {
+			if (hist) {
+				int oldcnt=ringcnt+1;
+				if (oldcnt >=  hs) oldcnt=0;
+				sumh=sumh-hist[oldcnt];
+				ringcnt++;
+				if ( ringcnt >= hs )  ringcnt=0;
+				hist[ringcnt]=radc(ch);
+				sumh=sumh+hist[ringcnt];
+				avg = sumh/hs;
+			}
+			else { avg=read_adc_ch(ch);}
+			return avg;
+		}
+};
+
+
+				
 // returns the humidiy in % , if T > -273 C  temperature compensation is applied 
 // T ambient temperature in C  
-float adc2Hum(float T ){
+float adc2Hum(float adcv, float T ){
 	static float hisH[HISSIZEH];
 	static int ringcH=0;
-	float vread=1000* read_adc_ch(HUNMIN); // [mV]
+	float vread=1000* adcv; // [mV]
 	// take the average of the last 10 readings 
 	hisH[ringcH++]=vread;
 	if( ringcH >=  HISSIZEH)ringcH=0;
@@ -81,6 +132,7 @@ float adc2Hum(float T ){
 	}
 	return hum;
 }
+
 
 
 // returns the NTC impedance as function of the input voltage  in ohm
@@ -111,10 +163,9 @@ float Tntc( float R ) {
 
 // returns the temperature ( average over last  10 measurements) 
 // adcv the last read volage 
-float adc2Tp( float &adcv , float  &R ){
+float adc2Tp( float adcv, float  &R ){
 	static float his[HISSIZE];
 	static int ringc=0;
-	adcv=read_adc_ch(TEMPIN);
 	his[ringc++]=adcv;
 	if( ringc >=  HISSIZE) ringc=0;
 	float avgs=0;
@@ -127,8 +178,8 @@ float adc2Tp( float &adcv , float  &R ){
 }
 
 
-float adc2Vsys( void ){
-	return 2*read_adc_ch(VSYSIN);
+float adc2Vsys( float adcv ){
+	return 2*adcv;
 }
 
 // dew point calc 
@@ -182,7 +233,7 @@ int main(){
 	float Vsys;// 5V power , ref for temperature 
 	float dp; //dewpoint 
     adc_init();
-    
+    read_adc_CH  hmradc(HUNMIN,&read_adc_ch,16);
     //gpio_disable_pulls (26);  //Vsys 
     //gpio_disable_pulls (27);  // V
     //gpio_disable_pulls (28);
@@ -200,15 +251,15 @@ int main(){
         printf("Rebooted by Watchdog ");
     } 
     printf("hum2dwp ver %s\n\r",HUM2DEWPVER);
-    float VTout, Rntc_now;
+    float  Rntc_now;
     outT.init_PWMVout(-40,50,0,3.3);
     outDP.init_PWMVout(-60,20,0,3.3);
     uint lc=0;
     while(1) {
 			watchdog_update();
-			Vsys=adc2Vsys( );
-			Tp= adc2Tp(VTout, Rntc_now);
-			Hum=adc2Hum(Tp);
+			Vsys=adc2Vsys(read_adc_ch(VSYSIN) );
+			Tp= adc2Tp(read_adc_ch(TEMPIN), Rntc_now);
+			Hum=adc2Hum(read_adc_ch(HUNMIN),Tp);
 			dp=dewpoint(Hum,Tp);
 			lc++;
 			if( lc%100 == 0){
