@@ -44,6 +44,11 @@ echo  "build/*" > .gitignore
 
 Each sub dir or "lib"  dir needs a CMakeList.txt file . 
 
+to create the make file 
+cd build 
+cmake ../ 
+
+Check for errors if no errors do make and check if the file projectname.uf2 is created. 
 
 
 projects : 
@@ -60,6 +65,7 @@ Would be better to use CMAKE for this but not yet figured out how to do this in 
    * LVDTchkctrl    *1)	program for controlling a actuator with PWM  and reading temperature for a setup testing LVDT's 
    * PWM					library to simplify the PWM control 
    * pwmclasstst			test program for the PWM lib , reading versions and on chip  temperature
+   * RasCtrl  	program to read temperatures and control power supply
 
 
 

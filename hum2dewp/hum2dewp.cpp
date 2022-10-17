@@ -17,7 +17,8 @@
  * 		   not tested   class is tested. 
  * V 0.91  use "float.h" #include "pico/types.h" #include "pico/bootrom/sf_table.h" not tested 
  * V 0.92  not tested with hardware.   Preps for ADC read class, the functions ADC2xx for ADC input 
- * V 0.92 
+ * V 0.93   uses the ADC class to read  
+ * V 0.95  to many changes go back to 9.2 
  */
 
 
@@ -33,7 +34,7 @@
 #include "pico/types.h"
 #include "pico/bootrom/sf_table.h"
 
-#define HUM2DEWPVER "0.92" 
+#define HUM2DEWPVER "0.95" 
 
 const float Vref=3.3; // voltage reference NTC circuit
 const float VrefADC=3.0; // voltage reference pico ADC 
@@ -45,7 +46,7 @@ const float RsNTC= 68000;  // serie resistor NTC
 const float NTCa_bi=8.55E-04;
 const float NTCb_bi=2.57E-04;
 const float NTCc_bi=1.65E-07;
-enum ADCINP {HUNMIN=0, TEMPIN=1 , VSYSIN=2 };
+enum ADCINP {HUMIN=0, TEMPIN=1 , VSYSIN=2 };
 
 
 
@@ -89,12 +90,12 @@ class read_adc_CH {
 		}//end constructor 
 		~read_adc_CH() {  if (hist) delete hist; } 
 		// reads the ADC ch and returns the value 
-		float get_cur_adc_V() {
+		float get_cur_adc_V(void) {
 			return read_adc_ch(ch);
 		}
 		//reads the ADC ch  and adds this value to the sum of the histogram removes the oldest value 
 		//returns the average of the histogram.  
-		float get_adcV() {
+		float get_adcV(void) {
 			if (hist) {
 				int oldcnt=ringcnt+1;
 				if (oldcnt >=  hs) oldcnt=0;
@@ -233,7 +234,8 @@ int main(){
 	float Vsys;// 5V power , ref for temperature 
 	float dp; //dewpoint 
     adc_init();
-    read_adc_CH  hmradc(HUNMIN,&read_adc_ch,16);
+    //read_adc_CH  Hadc(HUMIN,&read_adc_ch,16);
+    //read_adc_CH  Tadc(TEMPIN,&read_adc_ch,16);
     //gpio_disable_pulls (26);  //Vsys 
     //gpio_disable_pulls (27);  // V
     //gpio_disable_pulls (28);
@@ -259,7 +261,7 @@ int main(){
 			watchdog_update();
 			Vsys=adc2Vsys(read_adc_ch(VSYSIN) );
 			Tp= adc2Tp(read_adc_ch(TEMPIN), Rntc_now);
-			Hum=adc2Hum(read_adc_ch(HUNMIN),Tp);
+			Hum=adc2Hum(read_adc_ch(HUMIN ),Tp);
 			dp=dewpoint(Hum,Tp);
 			lc++;
 			if( lc%100 == 0){
