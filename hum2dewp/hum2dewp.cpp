@@ -19,6 +19,8 @@
  * V 0.92  not tested with hardware.   Preps for ADC read class, the functions ADC2xx for ADC input 
  * V 0.93   uses the ADC class to read  
  * V 0.95  to many changes go back to 9.2 
+ * V 0.96  added extra PWM in core 2  for testing the output circuit 
+ * V 1.00  functional with hardware 
  */
 
 
@@ -34,7 +36,7 @@
 #include "pico/types.h"
 #include "pico/bootrom/sf_table.h"
 
-#define HUM2DEWPVER "0.95" 
+#define HUM2DEWPVER "1.00" 
 
 const float Vref=3.3; // voltage reference NTC circuit
 const float VrefADC=3.0; // voltage reference pico ADC 
@@ -208,7 +210,7 @@ void core1_entry() {
 	PWM_PICO pwmled( PICO_DEFAULT_LED_PIN);  //GPIO 25 
 	pwmled.set_frequency(10000,true);
 	float delta_l=.05 ;
-	float dc_set;
+	float dc_set ;
 	while(1) {
 		for (float dc =0; dc<100; dc+=delta_l) {
 			if( delta_l < 2.5)delta_l=1.05*delta_l; // increase the delta each time
@@ -226,8 +228,8 @@ int main(){
     // Enable the watchdog, requiring the watchdog to be updated every 5100ms or the chip will reboot
     // second arg is pause on debug which means the watchdog will pause when stepping through code
     watchdog_enable(5100, 1);
-     PWM_PICO  outT(8,10000); // have to check for  optimal frequency 
-     PWM_PICO  outDP(10,10000);
+     PWM_PICO  outT(10,10000); // have to check for  optimal frequency 
+     PWM_PICO  outDP(11,10000);
 	// The ADC init part 
 	float Hum; // humidity 
 	float Tp; //temperature 

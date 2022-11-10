@@ -72,6 +72,7 @@ public:
 
 	//set the duty cycle so that the average output voltatge will be related to valuein based on the init_vout settings
 	// if init_vout is not set , then vout = valuein 
+	// @return duty cycle in % 
 	float set_PWMVout ( float valuein); 
 }; //end class PWM_PICO 
 
