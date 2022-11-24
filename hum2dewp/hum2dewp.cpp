@@ -21,6 +21,8 @@
  * V 0.95  to many changes go back to 9.2 
  * V 0.96  added extra PWM in core 2  for testing the output circuit 
  * V 1.00  functional with hardware 
+ * V 1.01  remove multiplying with 1000 and 0.0375 => 37.5
+ * 
  */
 
 
@@ -82,13 +84,15 @@ class read_adc_CH {
 	float avg;
 	float (*radc)(int);
 	public :
-		//constructor,  if histsize a histogram (array)  of histsize is created
+		//constructor,  if histsize >1 a histogram (array)  of histsize is created
+		// adcch , the ADC channel
+		// readadcf  , pointer to the function to read the ADC channel 
 		read_adc_CH(int adcch ,float (*readadcf)(int), int histsize=0) {
 			radc=readadcf;
 			ch=adcch;
 			float Nadc=read_adc_ch(ch);
 			hs=histsize; hist=NULL; ringcnt=0;sumh=0.0;
-			if (hs > 0 && hs < 100 ) hist=new float[(uint32_t)hs];
+			if (hs > 1 && hs < 100 ) hist=new float[(uint32_t)hs];
 		}//end constructor 
 		~read_adc_CH() {  if (hist) delete hist; } 
 		// reads the ADC ch and returns the value 
@@ -120,7 +124,7 @@ class read_adc_CH {
 float adc2Hum(float adcv, float T ){
 	static float hisH[HISSIZEH];
 	static int ringcH=0;
-	float vread=1000* adcv; // [mV]
+	float vread=adcv; // [V]
 	// take the average of the last 10 readings 
 	hisH[ringcH++]=vread;
 	if( ringcH >=  HISSIZEH)ringcH=0;
@@ -129,7 +133,7 @@ float adc2Hum(float adcv, float T ){
 		avgs+=hisH[cnt];
 	}
 	avgs=avgs/HISSIZEH;
-	float hum= 0.0375*avgs-37.7;
+	float hum= 37.5*avgs-37.7;
 	if( T > -273) {
 		hum = hum *( 1- 0.0024*(T-23));
 	}
@@ -146,7 +150,8 @@ float Rntc( float Vout,float g1,float o1,float Rs1, float Vreference) {
 }
 
 
-// fill in the constants for the burn in station 
+// fill in the constants  to the Rntc function for the burn in station 
+// the constants are defined global 
 float Rntc( float Vout ) {
 	return Rntc(Vout, gNTC,oNTC,RsNTC ,Vref);
 }
@@ -160,6 +165,7 @@ float  Tntc ( float R , float NTCa,float NTCb,float NTCc )  {
 
 
 // returns the Temperature given the NTC impedance  for the burn in station 
+// the contants are defined global 
 float Tntc( float R ) {
 	return Tntc(R,NTCa_bi,NTCb_bi,NTCc_bi);
 }
