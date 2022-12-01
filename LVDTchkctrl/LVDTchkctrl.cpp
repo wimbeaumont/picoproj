@@ -16,13 +16,15 @@
  * V 0.46 : put sleep in the core 1 in the for loop 
  * V 0.50 : put temperature sensor in high resolution
  * V 0.52 : adapted the new PWM API
+ * V 0.53 : acutator will  go off now after position is reached
+ * V 0.54 : corrected : pwm.getVersion  from char  to float 
  * C) Wim Beaumont Universiteit Antwerpen  2022
  *
  * License see
  * https://github.com/wimbeaumont/PeripheralDevices/blob/master/LICENSE
  */ 
 
-#define LVDTCHKCTRLVER "0.52"
+#define LVDTCHKCTRLVER "0.54"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -68,7 +70,7 @@ float adc2pos( uint16_t ADCread) {
 // switch on the power of the actuator pow = true, else off (pow=false ) 
 void poweract( bool pow ) {
 	if (pow )  gpio_put(ActPP,0); // inverted 
-	else gpio_put(ActPP,0); 
+	else gpio_put(ActPP,1); 
 }
 
 int main(){
@@ -121,6 +123,9 @@ int main(){
 			break;
 			case 'v' : // get version
 				printf("%5.2f\n",version);
+			break;
+			case 'w' : // get version
+				printf("%5.2f\n",atof(pwm.getVersion()));
 			break;
 			default:
 				printf("0.0\n");

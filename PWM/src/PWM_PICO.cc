@@ -2,6 +2,8 @@
 
 
 	PWM_PICO::PWM_PICO( uint gpiopin, float freq):vgain(1.0),voffset(0.0) ,VrefPMC(3.3) {
+		//const char* version2=PWM_PICO_VER;
+		version=PWM_PICO_VER;
 		gpio_set_pulls (gpiopin,true,false);
 		gpio_set_function(gpiopin, GPIO_FUNC_PWM);
 		config = pwm_get_default_config();

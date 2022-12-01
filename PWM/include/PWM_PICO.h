@@ -8,11 +8,13 @@
 // v1.2  added vout functionality 
 // v1.21 corrected  vout functionality 
 // v1.3  added set_dutycycle_dec
+// v1.4  added get version
 
-#define PWM_PICO_VER "1.32"
+#define PWM_PICO_VER "1.41"
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
 #include "hardware/clocks.h"
+#include <cstring>
 
 class PWM_PICO{
 	public: 
@@ -27,12 +29,16 @@ class PWM_PICO{
 	float vgain;  
 	float voffset;
 	float VrefPMC;
+	const char* version;
 
 public: 	
 	// initialize the PWM for gpiopin 
 	// if frequency > 0 the frequency will set and the PWM will be enabled.
 	// pull up is set  
 	PWM_PICO( uint gpiopin , float freq=0 );
+	
+	// returns the pointer to the version string , c
+	const char* getVersion(void ){return version;}
 	
 	// set the periode time in us  of the PWM 
 	// try to use the full 16 bits counter
