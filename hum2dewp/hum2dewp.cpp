@@ -22,9 +22,12 @@
  * V 0.96  added extra PWM in core 2  for testing the output circuit 
  * V 1.00  functional with hardware 
  * V 1.01  remove multiplying with 1000 and 0.0375 => 37.5
+ * V 1.03  adjusted calibration values for humidity input
+ * V 1.10  memic current output for humitidy 4mA -> 0.3636  , 20mA 1.181 V 
+ * V 1.11  correction for setting 4mA ref 
  * 
  */
-
+#define HUM2DEWPVER "1.11" 
 
 
 #include <stdio.h>
@@ -37,34 +40,57 @@
 #include "float.h" 
 #include "pico/types.h"
 #include "pico/bootrom/sf_table.h"
-
-#define HUM2DEWPVER "1.00" 
-
-const float Vref=3.3; // voltage reference NTC circuit
-const float VrefADC=3.0; // voltage reference pico ADC 
-const int HISSIZE=10;
-const int HISSIZEH=10;
-const float gNTC=0.7464265433589305 ; // gain for the R NTC calculation based on cal resistors
-const float oNTC=0.22897459613882545; // offset for the R NTC calculation based on cal resistors
-const float RsNTC= 68000;  // serie resistor NTC 
-const float NTCa_bi=8.55E-04;
-const float NTCb_bi=2.57E-04;
-const float NTCc_bi=1.65E-07;
+#include "hum2dewputils.h"
 enum ADCINP {HUMIN=0, TEMPIN=1 , VSYSIN=2 };
+const unsigned int RDBUFSIZE=512;
+
+void  serial_bufferflush(void) {stdio_flush();}
+
+/* this is a kind of polling  reading with time out 
+ * it loops max 5000 times checking the input buffer (waiting for 100us) 
+ * if a char is found it checks for \n  , if this is the case it break the while loop and returns the number of char in the  readbuf 
+ * else the char is placed in the readbuf
+ * \r is ignored  
+ * length of the readbuffer should be RDBUFSIZE ( to be defined) 
+*/
+
+int  read_noneblocking(  char* readbuf) {
+	//for the moment still blocking , to be done  time out check 
+	char recchar='$'; // just dummy 
+	int bufcnt=0,cnt=0;readbuf[0]='\0';
+	while (recchar != '\n') { // continue reading
+		
+		//kickWD();// as long in the reading routine don't init a WD restart 
+		cnt++;
+		int reccharpico=getchar_timeout_us(100);
+		if ( reccharpico  != PICO_ERROR_TIMEOUT){
+			recchar=(char) reccharpico;// char is read 
+			cnt=0; //kickWD(); //printf("recchar %c \r\n",recchar);
+			if ( recchar == '\r' ) continue; // ignore line feed 
+			if ( recchar == '\n' ) {						
+				readbuf[bufcnt]='\0';
+				//printf("\n detected read done %s bufcnt = %d \n\r", readbuf,bufcnt);
+			}		
+			else {
+				if ( bufcnt == RDBUFSIZE-1) { readbuf[0]='\0';recchar='\n' ;}
+				else { readbuf[bufcnt]=recchar;
+						//printf("%c , bufcnt %d  %c\r\n" , recchar, bufcnt,readbuf[bufcnt]);
+						bufcnt++;
+				}
+			}
+				
+			}// end check if char is present
+			if (cnt > 5000 ) {// stop reading 
+				bufcnt=0; recchar='\n' ;
+				serial_bufferflush();
+			}
+	} // end while check for \n 
+			
+	return bufcnt;
+}	
 
 
 
-// routing to take the average of a ring counter , avoiding sum over all entries of the histogram 
-float  avg(float newvalue, float* hist,int& ringcnt, int HSIZE , float& sum ) {
-	int oldcnt=ringcnt+1;
-	if (oldcnt >=  HSIZE) oldcnt=0;
-	sum=sum-hist[oldcnt];
-	ringcnt++;
-	if ( ringcnt >= HSIZE )  ringcnt=0;
-	hist[ringcnt]=newvalue;
-	sum=sum+newvalue;
-	return sum/HSIZE;
-}
 	
 // returns the voltage on the adcch 
 float read_adc_ch( int adcch) {
@@ -118,101 +144,11 @@ class read_adc_CH {
 };
 
 
-				
-// returns the humidiy in % , if T > -273 C  temperature compensation is applied 
-// T ambient temperature in C  
-float adc2Hum(float adcv, float T ){
-	static float hisH[HISSIZEH];
-	static int ringcH=0;
-	float vread=adcv; // [V]
-	// take the average of the last 10 readings 
-	hisH[ringcH++]=vread;
-	if( ringcH >=  HISSIZEH)ringcH=0;
-	float avgs=0;
-	for (int cnt=0;cnt<HISSIZEH;cnt++) {
-		avgs+=hisH[cnt];
-	}
-	avgs=avgs/HISSIZEH;
-	float hum= 37.5*avgs-37.7;
-	if( T > -273) {
-		hum = hum *( 1- 0.0024*(T-23));
-	}
-	return hum;
-}
-
-
-
-// returns the NTC impedance as function of the input voltage  in ohm
-float Rntc( float Vout,float g1,float o1,float Rs1, float Vreference) {
-   float Vin= g1*Vout + o1;
-   float R = Rs1 *Vin /( Vref-Vin) ;
-   return  R;
-}
-
-
-// fill in the constants  to the Rntc function for the burn in station 
-// the constants are defined global 
-float Rntc( float Vout ) {
-	return Rntc(Vout, gNTC,oNTC,RsNTC ,Vref);
-}
-
-//returns the temperature of the ntc give the impedance R   
-// NTCa,b,c are the NTC paramters 
-float  Tntc ( float R , float NTCa,float NTCb,float NTCc )  {  
-	float lgR=log(R);
-   return  -273 + 1/ ( NTCa + NTCb * lgR +NTCc*lgR*lgR*lgR);
-}
-
-
-// returns the Temperature given the NTC impedance  for the burn in station 
-// the contants are defined global 
-float Tntc( float R ) {
-	return Tntc(R,NTCa_bi,NTCb_bi,NTCc_bi);
-}
-
-// returns the temperature ( average over last  10 measurements) 
-// adcv the last read volage 
-float adc2Tp( float adcv, float  &R ){
-	static float his[HISSIZE];
-	static int ringc=0;
-	his[ringc++]=adcv;
-	if( ringc >=  HISSIZE) ringc=0;
-	float avgs=0;
-	for (int cnt=0;cnt<HISSIZE;cnt++) {
-		avgs+=his[cnt];
-	}
-	avgs=avgs/HISSIZE;
-	R= Rntc(avgs) ;
-	return Tntc(R);
-}
-
-
-float adc2Vsys( float adcv ){
-	return 2*adcv;
-}
-
-// dew point calc 
-
-// https://en.wikipedia.org/wiki/Dew_point#Calculating_the_dew_point
-// rh relative humitdity in % ( so 70  = 70% ) 
-// Tact actual temperature in [C]
-// return dewpoint in [C] 
-float dewpoint ( float rh , float Tact){
-	const float a=6.1121;
-	const float b=18.676;
-	const float c=257.14;
-	const float d=234.5;
-	//expT= exp((b-T/d)*(T/c+T))
-	float expT=exp((b-Tact/d)*(Tact/(c+Tact))); 
-	//Ym(T,RH)= ln( RH/100 * expT) eventual  ln(R/100) + (b-T/d)*(T/c+T)
-	float Ym= log((rh/100)*expT);
-	return c*Ym/(b-Ym);
-
-}
 
 
 
 void core1_entry() {
+	char readbuf[RDBUFSIZE];
 	PWM_PICO pwmled( PICO_DEFAULT_LED_PIN);  //GPIO 25 
 	pwmled.set_frequency(10000,true);
 	float delta_l=.05 ;
@@ -223,6 +159,11 @@ void core1_entry() {
 			dc_set=pwmled.set_dutycycle(dc);
 			sleep_ms(200);
 		}
+		if ( read_noneblocking( readbuf)){
+			printf( readbuf);
+		}
+		
+		
 		
 	}
 }
@@ -263,7 +204,8 @@ int main(){
     printf("hum2dwp ver %s\n\r",HUM2DEWPVER);
     float  Rntc_now;
     outT.init_PWMVout(-40,50,0,3.3);
-    outDP.init_PWMVout(-60,20,0,3.3);
+    //outDP.init_PWMVout(-60,20,0,3.3);out between 0 and 3.3 V 
+    outDP.init_PWMVout(-60,20,0.3636,1.818); // for 20mA output equivalent 
     uint lc=0;
     while(1) {
 			watchdog_update();

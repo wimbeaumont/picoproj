@@ -21,19 +21,22 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(SensBoxEnvSer SensBoxEnvSer.cpp )
+add_subdirectory(../PWM/src  ./PMW ) 
 add_subdirectory(./src) 
+
 target_compile_definitions(SensBoxEnvSer PUBLIC -D __PICO__)
 
 pico_set_program_name(SensBoxEnvSer "SensBoxEnvSer")
 pico_set_program_version(SensBoxEnvSer "0.1")
 
 target_include_directories(SensBoxEnvSer PUBLIC ./include/ )
+target_include_directories(SensBoxEnvSer PUBLIC ../PWM/include/)
 
 pico_enable_stdio_uart(SensBoxEnvSer 1)
 pico_enable_stdio_usb(SensBoxEnvSer 1)
 
 # Add the standard library to the build
-target_link_libraries(SensBoxEnvSer pico_stdlib   PerDev )
+target_link_libraries(SensBoxEnvSer pico_stdlib   PerDev pwmlib)
 
 # Add any user requested libraries
 target_link_libraries(SensBoxEnvSer
@@ -41,6 +44,8 @@ target_link_libraries(SensBoxEnvSer
         hardware_timer
         hardware_watchdog
         hardware_clocks
+        hardware_pwm
+        pico_multicore
 
         )
 

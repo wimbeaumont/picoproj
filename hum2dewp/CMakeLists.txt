@@ -21,6 +21,8 @@ pico_sdk_init()
 
 add_executable(hum2dewp hum2dewp.cpp )
 add_subdirectory(../PWM/src  ./PMW ) 
+add_subdirectory(./src) 
+
 target_compile_definitions(hum2dewp PUBLIC -D __PICO__)
 
 
@@ -37,6 +39,7 @@ pico_enable_stdio_usb(hum2dewp 1)
 
 # Add the standard library to the build
 target_link_libraries(	hum2dewp 
+						hum2dewputils
 						pico_stdlib
 						pico_multicore
 						hardware_watchdog
