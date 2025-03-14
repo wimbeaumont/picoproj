@@ -66,10 +66,11 @@ Would be better to use CMAKE for this but not yet figured out how to do this in 
    * PWM					library to simplify the PWM control 
    * pwmclasstst			test program for the PWM lib , reading versions and on chip  temperature
    * RasCtrl  	program to read temperatures and control power supply
+   * hum2dewp  this is a project where the pico is used to get the humidity and the temperature from a HTM2500LF sensor and calculates the dewpoint 
 
 
 
 
 Some "ptifalls"  
 
-examples  scan I2C bus,  connected to a linux machine ( lubuntu 18 ) the serial port was not found.  Fixed it by putting hte printf in a while(1). 
+examples  scan I2C bus,  connected to a linux machine ( lubuntu 18 ) the serial port was not found.  Fixed it by putting the printf in a while(1). 

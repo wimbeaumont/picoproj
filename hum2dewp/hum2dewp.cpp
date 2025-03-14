@@ -17,7 +17,7 @@
  * 		   not tested   class is tested. 
  * V 0.91  use "float.h" #include "pico/types.h" #include "pico/bootrom/sf_table.h" not tested 
  * V 0.92  not tested with hardware.   Preps for ADC read class, the functions ADC2xx for ADC input 
- * V 0.93   uses the ADC class to read  
+ * V 0.93  uses the ADC class to read  
  * V 0.95  to many changes go back to 9.2 
  * V 0.96  added extra PWM in core 2  for testing the output circuit 
  * V 1.00  functional with hardware 
@@ -25,9 +25,10 @@
  * V 1.03  adjusted calibration values for humidity input
  * V 1.10  memic current output for humitidy 4mA -> 0.3636  , 20mA 1.181 V 
  * V 1.11  correction for setting 4mA ref 
+ * V 1.12  removed unecessary watchdog loop introduced pstatus not tested 
  * 
  */
-#define HUM2DEWPVER "1.11" 
+#define HUM2DEWPVER "1.12" 
 
 
 #include <stdio.h>
@@ -43,6 +44,8 @@
 #include "hum2dewputils.h"
 enum ADCINP {HUMIN=0, TEMPIN=1 , VSYSIN=2 };
 const unsigned int RDBUFSIZE=512;
+
+unsigned int pstatus=0;
 
 void  serial_bufferflush(void) {stdio_flush();}
 
@@ -170,8 +173,13 @@ void core1_entry() {
 
 
 int main(){	
-
     stdio_init_all();
+    if (watchdog_caused_reboot()) {
+        printf("Rebooted by Watchdog ");
+        pstatus=1;
+    }else   pstatus=2;
+     
+
     // Enable the watchdog, requiring the watchdog to be updated every 5100ms or the chip will reboot
     // second arg is pause on debug which means the watchdog will pause when stepping through code
     watchdog_enable(5100, 1);
@@ -193,14 +201,6 @@ int main(){
     adc_gpio_init(28);
     //just for fun
     multicore_launch_core1(core1_entry);
-	for (uint i = 0; i < 25; i++) {
-		printf("init %d\n", i);
-		watchdog_update();
-	}    
-
-    if (watchdog_caused_reboot()) {
-        printf("Rebooted by Watchdog ");
-    } 
     printf("hum2dwp ver %s\n\r",HUM2DEWPVER);
     float  Rntc_now;
     outT.init_PWMVout(-40,50,0,3.3);
@@ -220,7 +220,8 @@ int main(){
 				printf("dp= %f ",dp);
 				printf("T= %f ",Tp );
 				printf("dT=%f ", outT.set_PWMVout(Tp));
-				printf("dDP=%f", outDP.set_PWMVout(dp));
+				printf("dDP=%f ", outDP.set_PWMVout(dp));
+				printf("status=%d",pstatus)
 				printf("\n\r");
 			}
 	}
