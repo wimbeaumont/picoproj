@@ -2,10 +2,12 @@ Projects with the Raspberry Pi pico processor board
 
 https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html
 
-This are idependent projects or uses the projects / libs from the 
+Most of the projects in this repositor depends on the repositories : 
 
    * wimbeaumont/PeripheralDevices
    * wimbeaumont/peripheral_dev_tst
+   
+These are not included so should be downloaded sepparatly 
    
 The machine used to generate the pico  is  a virtual box machine , ubuntu 20  
 
@@ -67,6 +69,8 @@ Would be better to use CMAKE for this but not yet figured out how to do this in 
    * pwmclasstst			test program for the PWM lib , reading versions and on chip  temperature
    * RasCtrl  	program to read temperatures and control power supply
    * hum2dewp  this is a project where the pico is used to get the humidity and the temperature from a HTM2500LF sensor and calculates the dewpoint 
+   * SensBoxEnvSer to readout the enironment sensors of a test setup ( sens box ) 
+   * BiBoxEnvSer : to readout the enironment sensors of a test setup ( burnin  box )  
 
 
 
